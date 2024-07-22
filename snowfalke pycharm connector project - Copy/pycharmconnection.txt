@@ -1,0 +1,171 @@
+import snowflake.connector
+
+
+def connect_to_snowflake():
+    try:
+        # Establish connection
+        ccon = snowflake.connector.connect(
+            user='Anisha',
+            password='Tiger@2004',
+            account='pmjjdgt-ot02080',
+            database='dep'
+        )
+        return ccon
+    except snowflake.connector.errors.ProgrammingError as e:
+        print(f"Snowflake connection error: {e}")
+        return None
+
+
+def fetch_from_regions_table(cur):
+    try:
+        # Execute SELECT query on REGIONS table
+        cur.execute('SELECT * FROM REGIONS')
+
+        # Fetch one row from the result set
+        one_row = cur.fetchone()
+        print("Region:", one_row)
+    except snowflake.connector.errors.DatabaseError as e:
+        print(f"Error fetching data from REGIONS table: {e}")
+
+
+def update_employee_data(cur, ccon):
+    try:
+        # Update employee with employee_id 111000
+        cur.execute("""
+            UPDATE employees
+            SET 
+                first_name = 'moni',
+                last_name = 'M S',
+                email = 'new.email@example.com',
+                hire_date = '2024-07-22',
+                department = 'IT',
+                gender = 'M',
+                salary = 60000,
+                region_id = 2
+            WHERE employee_id = 1
+        """)
+
+        # Commit the transaction
+        ccon.commit()
+
+        # Check if any rows were affected by the update
+        if cur.rowcount > 0:
+            print("Employee data updated successfully.")
+        else:
+            print("No rows were updated for employee_id 111000.")
+
+        # Retrieve updated employee data (optional)
+        cur.execute("""
+            SELECT *
+            FROM employees
+            WHERE employee_id = 111000
+        """)
+
+        # Fetch the updated record (optional)
+        updated_employee = cur.fetchone()
+        if updated_employee:
+            print("Updated Employee:", updated_employee)
+
+    except snowflake.connector.errors.DatabaseError as e:
+        print(f"Error updating employee data: {e}")
+
+
+def fetch_and_display_regions(cur):
+    try:
+        # Execute SELECT query on REGIONS table
+        cur.execute('SELECT * FROM REGIONS')
+
+        # Fetch all rows from the result set
+        rows = cur.fetchall()
+
+        # Print each row in the result set
+        for row in rows:
+            print("Region:", row)
+
+    except snowflake.connector.errors.DatabaseError as e:
+        print(f"Error fetching data from REGIONS table: {e}")
+
+
+def fetch_and_display_department_salaries(cur):
+    try:
+        # Execute SELECT query on employees table
+        cur.execute("""
+            SELECT department, SUM(salary)
+            FROM employees
+            WHERE region_id IN (4, 5, 6, 7)
+            GROUP BY department
+        """)
+
+        # Fetch all rows from the result set
+        rows = cur.fetchall()
+
+        # Print each row in the result set
+        for row in rows:
+            print("Department:", row[0], "| Total Salary:", row[1])
+
+    except snowflake.connector.errors.DatabaseError as e:
+        print(f"Error fetching department salaries: {e}")
+
+
+def fetch_employee_names_with_region(cur):
+    try:
+        # Execute SELECT query joining employees and regions tables
+        cur.execute("""
+            SELECT first_name, last_name
+            FROM employees
+            INNER JOIN regions ON employees.region_id = regions.region_id
+        """)
+
+        # Fetch all rows from the result set
+        rows = cur.fetchall()
+
+        # Print each row in the result set
+        for row in rows:
+            print("First Name:", row[0], "| Last Name:", row[1])
+
+    except snowflake.connector.errors.DatabaseError as e:
+        print(f"Error fetching employee names with region: {e}")
+
+
+def main():
+    # Attempt to connect to Snowflake
+    ccon = connect_to_snowflake()
+    if ccon:
+        try:
+            # Create cursor
+            cur = ccon.cursor()
+
+            # Attempt to fetch data from REGIONS table
+            fetch_from_regions_table(cur)
+
+            # Attempt to update employee data
+            update_employee_data(cur, ccon)
+
+            # Fetch and display data from REGIONS table (new try block)
+            try:
+                fetch_and_display_regions(cur)
+            except snowflake.connector.errors.DatabaseError as e:
+                print(f"Error fetching and displaying regions: {e}")
+
+            # Fetch and display department salaries
+            try:
+                fetch_and_display_department_salaries(cur)
+            except snowflake.connector.errors.DatabaseError as e:
+                print(f"Error fetching department salaries: {e}")
+
+            # Fetch and display employee names with region
+            try:
+                fetch_employee_names_with_region(cur)
+            except snowflake.connector.errors.DatabaseError as e:
+                print(f"Error fetching employee names with region: {e}")
+
+            # Close cursor
+            cur.close()
+
+        finally:
+            # Close connection
+            ccon.close()
+
+
+if __name__ == "__main__":
+    main()

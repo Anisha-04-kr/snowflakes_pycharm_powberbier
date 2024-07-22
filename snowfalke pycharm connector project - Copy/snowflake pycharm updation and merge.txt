@@ -1,0 +1,147 @@
+import snowflake.connector
+
+def connect_to_snowflake():
+    try:
+        # Establish connection
+        conn = snowflake.connector.connect(
+            user='Anisha',
+            password='Tiger@2004',
+            account='pmjjdgt-ot02080',
+            database='dep'
+        )
+        return conn
+    except snowflake.connector.errors.ProgrammingError as e:
+        print(f"Snowflake connection error: {e}")
+        return None
+
+def fetch_from_regions_table(conn):
+    try:
+        # Create cursor
+        cur = conn.cursor()
+
+        # Execute SELECT query on REGIONS table
+        cur.execute('SELECT * FROM REGIONS')
+
+        # Fetch one row from the result set
+        one_row = cur.fetchone()
+        print("Region:", one_row)
+
+        # Close cursor
+        cur.close()
+
+    except snowflake.connector.errors.DatabaseError as e:
+        print(f"Error fetching data from REGIONS table: {e}")
+
+def update_employee_data(conn):
+    try:
+        # Create cursor
+        cur = conn.cursor()
+
+        # Update employee with employee_id 1 (adjust SQL as per your database schema)
+        cur.execute("""
+            UPDATE employees
+            SET 
+                first_name = 'ani',
+                last_name = 'K',
+                email = 'new.email@example.com',
+                hire_date = '2024-07-22',
+                department = 'IT',
+                gender = 'F',
+                salary = 60000,
+                region_id = 2
+            WHERE employee_id = 1
+        """)
+
+        # Commit the transaction
+        conn.commit()
+
+        # Check if any rows were affected by the update
+        if cur.rowcount > 0:
+            print("Employee data updated successfully.")
+        else:
+            print("No rows were updated for employee_id 1.")
+
+        # Retrieve updated employee data
+        cur.execute("""
+            SELECT *
+            FROM employees
+            WHERE employee_id = 1
+        """)
+
+        # Fetch the updated record
+        updated_employee = cur.fetchone()
+        if updated_employee:
+            print("Updated Employee:", updated_employee)
+
+        # Close cursor
+        cur.close()
+
+    except snowflake.connector.errors.DatabaseError as e:
+        print(f"Error updating employee data: {e}")
+
+def alter_regions_table(conn):
+    try:
+        # Create cursor
+        cur = conn.cursor()
+
+        # Add column region_country
+        cur.execute("""
+            ALTER TABLE regions
+            ADD COLUMN region_country VARCHAR(200)
+        """)
+
+        # Modify column region_country to VARCHAR(100)
+        cur.execute("""
+            ALTER TABLE regions
+            MODIFY COLUMN region_country VARCHAR(100)
+        """)
+
+        # Update region_country with concatenated values
+        cur.execute("""
+            UPDATE regions
+            SET region_country = CONCAT(region, ', ', country)
+        """)
+
+        # Drop column region
+        cur.execute("""
+            ALTER TABLE regions
+            DROP COLUMN region
+        """)
+
+        # Drop column country (if necessary)
+        cur.execute("""
+            ALTER TABLE regions
+            DROP COLUMN country
+        """)
+
+        # Commit the transaction
+        conn.commit()
+
+        print("Regions table altered successfully.")
+
+        # Close cursor
+        cur.close()
+
+    except snowflake.connector.errors.DatabaseError as e:
+        print(f"Error altering regions table: {e}")
+
+def main():
+    # Attempt to connect to Snowflake
+    conn = connect_to_snowflake()
+    if conn:
+        try:
+            # Attempt to fetch data from REGIONS table
+            fetch_from_regions_table(conn)
+
+            # Attempt to update employee data
+            update_employee_data(conn)
+
+            # Attempt to alter regions table
+            alter_regions_table(conn)
+
+        finally:
+            # Close connection
+            conn.close()
+
+if __name__ == "__main__":
+    main()

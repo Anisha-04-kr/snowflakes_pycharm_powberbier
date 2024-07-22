@@ -1,0 +1,19 @@
+import snowflake.connector
+
+ccon = snowflake.connector.connect(
+    user='MONISHA',
+    password='Monisha@2004',
+    account='blbwwum-ym36168',
+    database='work_analysis'
+)
+
+cur = ccon.cursor()
+try:
+    cur.execute('SELECT * FROM REGIONS')
+
+    one_row = cur.fetchone()
+    print(one_row)  # Fixed typo here from 'onr_row' to 'one_row'
+finally:
+    cur.close()
+
+ccon.close()
